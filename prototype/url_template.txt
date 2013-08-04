@@ -1,0 +1,17 @@
+
+
+ 65..mortartest.php
+
+
+   //laptop ...comptability checks out ok..
+   http://www.amazon.com/s/ref=nb_sb_noss_1?url=search-alias%3Daps&field-keywords=laptop&sprefix=laptop%2Caps&rh=i%3Aaps%2Ck%3Alaptop
+   
+
+   //laptop case
+    http://www.amazon.com/s/ref=nb_sb_noss_1?url=search-alias%3Daps&field-keywords=laptop+case&rh=i%3Aaps%2Ck%3Alaptop+case
+
+  
+
+
+       
+
