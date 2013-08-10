@@ -83,6 +83,9 @@
     
     
     //PROTOTYPING some more using the DOM..
+    /*
+    *  The following are rules set for getElementById("center"):    
+    */        
      $section = 3;
      $basket_arr = array();
      $count_children = $a->getElementById("center")->childNodes($section)->children();    //First get the number of children to a specific node..
@@ -98,21 +101,57 @@
       
       try{
        //Grab the prime price..
-       $prime = $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(0)->childNodes(0)->childNodes(1)->plaintext;
-        $basket_arr[$i]['prime'] = $prime;
+       if( ($prime = $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(0)->childNodes(0)->childNodes(1)->plaintext) !== FALSE )
+       {
+        $prime = preg_replace('/\s/','',$prime);
+        if($prime != '')
+        {
+         $basket_arr[$i]['prime'] = $prime;
+        }
+        else{
+         throw new Exception('Prime found, strlen is zero');        
+        }
+       }else{
+        throw new Exception('No prime found.');
+       }
+        
       }catch(Exception $e){
-       return false;
+       $basket_arr[$i]['prime'] = $e->getMessage();
       }
       
-      try{
-       //Grab the secondary NEW price..
-       $sec_new = $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;
-        $basket_arr[$i]['sec_new'] = $sec_new;
-      }catch(Exception $e){
-       return false; 
-      }
       
+       /*
+       *  Purpose: Handling secondary new and used prices..
+       *  1.) First count the # of childNodes inside the relevant container..
+       *  2.) Grab the 'href' inside $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3) :
+       *    a.) Check if 'new' or 'used' is present. If so, this determines our path of entry to the data.       
+       */              
+      try{ 
+       if( count( $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->children() ) < 5 )  //Signifies we only have 'new' OR 'used' prices available to us..
+       {
+        $href = $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->href;
+        if( strpos($href, 'new') != FALSE )
+        {
+         $basket_arr[$i]['sec_new']  = $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;
+         $basket_arr[$i]['sec_used'] = 'Used node was not present.';
+        }
+        elseif( strpos($href, 'new') == FALSE )
+        {
+         $basket_arr[$i]['sec_new']  = $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;  //These are both holding the same value according to the amazon site..
+         $basket_arr[$i]['sec_used'] = $basket_arr[$i]['sec_new'];                                                                                                                //""..
+        }
+       }
+       elseif( count( $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->children() ) == 5 )
+       {
+        $basket_arr[$i]['sec_new']  =  $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;
+        $basket_arr[$i]['sec_used'] =  $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(4)->childNodes(0)->childNodes(0)->plaintext;
+       }
+       //There is not a case where 'used' will be by itself inside getElementById("center")..
+      }catch(Exception $e){
+        return false;
+      }
        
+      /* 
       try{
        //Grab the USED price..
        if( count( $a->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->children() ) < 5 )  //Signifies we only have only 1/2 secondaries available to us..
@@ -126,6 +165,7 @@
       }catch(Exception $e){
        return false;
       }
+      */
      
      } //end for..
      //print_r($basket_arr);
