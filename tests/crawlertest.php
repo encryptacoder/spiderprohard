@@ -9,6 +9,17 @@
  *
  */
  
+ /*
+ *  Preface: Testing a dynamic web service utilizing DOM methods/properties
+ *   consumes much time and resources.
+ *   Solution: For the purposes of web crawling a dynamic site ie Amazon, 
+ *    I have chosen to just test (up to) loading the actual website.
+ *    
+ *    Everything else: The public class has tested methods, and also prototyped (DOM related) methods.
+ *    
+ *    Also, the prototype interface shall use those tested methods and also those prototyped (DOM related) methods.  
+ */  
+ 
  require_once('../simple_html_dom.php');
  require_once('../Snoopy.class.php');
  require_once('../workers/crawler.php');
@@ -16,8 +27,15 @@
  Class CrawlerTest extends PHPUnit_Framework_TestCase
  {
   protected $_crawler = null;
-  //protected $found_descrip_parent = 'span';
-  //protected $found_descrip_child  = 'class=lrg bold';
+  
+  //REFERENCE: See ' testGetNumberOfChildrenForElementBelongingToGetElementByIdArray ' ..
+  
+  protected $_section = 3;
+  /* 
+  *  Test seperately for children 0, 1, 2:
+  *    Each child will endure a series of tests, esp for secondary price value.  
+  */   
+  protected $_mock_which_child = 0;  //This is the numerator for count_children (ie 0/2) where count_children is 3..
   
   public function setUp(){
    $this->_crawler = new Crawler();
@@ -29,7 +47,7 @@
   
   
   public function testFetchConfigurationSettingsForAParticularProductID(){
-   $config_id = 1;
+   $config_id = 2;
    $this->assertInternalType('int', $config_id);
    $query = "
              SELECT
@@ -84,7 +102,6 @@
    $stored_arr['loadedPotato'] = $loadedPotato;
    return $stored_arr;
   }
-  
   
  }
 ?>
