@@ -92,13 +92,14 @@
   
   /*  Method  teamWorkLoadWebsite()  { Tested } 
   *    @Purpose  Responsible for loading the website.
+  *    @NOTE:    Each $internal_call (where TRUE) should be re-using the singleton instance of $this->teamExplorer['html'] ..   
   *     @param  string  $string_to_load  The website (in the form of a string) to load.
   *     @param   
   *     
   *     @return int     1 for successfully loading, or 0 for fail to load.
   */    
-  public function teamWorkLoadWebsite( $string_to_load, $internal_call = FALSE ){
-   $html = ( !is_null($this->teamExplorer['html']) ) ? $this->teamExplorer['html'] : new simple_html_dom(); 
+  public function teamWorkLoadWebsite( $string_to_load, $internal_call = FALSE ){ 
+   $html = ( !is_null($this->teamExplorer['html']) ) ? $this->teamExplorer['html'] : new simple_html_dom();  
    
    if( $internal_call == FALSE )
    {
@@ -113,6 +114,19 @@
   
   } //end teamWorkLoadWebsite()..
   
+  
+  /*
+  *  Method determineSection()  { Prototyped }
+  *   @Purpose  This value does change (usually either 3 || 4), so let it be determined dynamically..  
+  */ 
+  public function determineSection($position, $stored_arr){ 
+   $internal_call = TRUE;
+   if( $html = $this->teamWorkLoadWebsite( $stored_arr['page_contents_str'], $internal_call ) )
+   {
+    return count( $html->getElementById($position)->children() ) -1;
+   }
+  }
+   
   
   /*
   *  Method getChildren()   { Prototyped }
@@ -168,7 +182,46 @@
     }
     
    }
-  }
+  } //end getPrimePrice()..
+  
+  
+  //@return array
+  public function getNewUsedSecondaryPrice($position, $section, $stored_arr, $i){
+   $internal_call = TRUE;
+   if( $html = $this->teamWorkLoadWebsite( $stored_arr['page_contents_str'], $internal_call ) )
+   {
+  
+    $basket_arr = array();
+    if( count( $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->children() ) < 5 )  //Signifies we only have 'new' OR 'used' prices available to us..
+    {
+     $href = $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->href;
+     if( strpos($href, 'new') != FALSE )
+     {
+      $basket_arr[$i]['sec_new']  = $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;
+      $basket_arr[$i]['sec_used'] = 'Used node was not present.';
+     }
+     elseif( strpos($href, 'new') == FALSE )
+     {
+      $basket_arr[$i]['sec_new']  = $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;  //These are both holding the same value according to the amazon site..
+      $basket_arr[$i]['sec_used'] = $basket_arr[$i]['sec_new'];                                                                                                                //""..
+     }
+     return $basket_arr;
+    }
+    elseif( count( $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->children() ) == 5 )
+    {
+     $basket_arr[$i]['sec_new']  =  $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(3)->childNodes(0)->childNodes(0)->plaintext;
+     $basket_arr[$i]['sec_used'] =  $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(4)->childNodes(0)->childNodes(0)->plaintext;
+     return $basket_arr;
+    }
+    elseif( count( $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->children() ) == 6 )
+    {
+     $basket_arr[$i]['sec_new']  =  $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(4)->childNodes(0)->childNodes(0)->plaintext;
+     $basket_arr[$i]['sec_used'] =  $html->getElementById("center")->childNodes($section)->childNodes($i)->childNodes(3)->childNodes(5)->childNodes(0)->childNodes(0)->plaintext;
+     return $basket_arr;
+    }
+    
+   }
+  } //end getNewUsedSecondaryPrice()..
   
    
   } //end Crawler class..
@@ -177,8 +230,7 @@
   //Public api code..
   
   $crawler_A = new Crawler();
-   $position = "center";
-   $section  = 4;         //This might have to be changed, since it does change.. double-check just in case.
+   $position = "center";  
   $container = array();
   $query = "
              SELECT
@@ -214,42 +266,35 @@
     echo $e->getMessage();
    }
    
+   $section = $crawler_A->determineSection($position, $container);
    $count_children = $crawler_A->getChildren($position, $section, $container);
-    $i = 2; //debugging only..
+    $i = 1; //Debugging: possible values are (0, 1, 2)..
    $descrip_str    = $crawler_A->getDescription($position, $section, $container, $i);
    $prime_str      = $crawler_A->getPrimePrice($position, $section, $container, $i); 
-    echo $prime_str;
-    //LEFT OFF, need to start doing secondary used and new prices now..
-    
-    
-   /*
+   
    try{
-    $rs_arr = $crawler_A->getConfig($query);  //@return  $rs_arr = array ( [product] => laptop [type] => single )    
+    if( ($new_used_sec_arr = $crawler_A->getNewUsedSecondaryPrice($position, $section, $container, $i)) !== FALSE )
+    {
+     if( count($new_used_sec_arr[$i]) == 1)
+     {
+      throw new Exception('getNewUsedSecondaryPrice() only returned one secondary price. Expecting two secondary prices. ');
+     }
+     elseif( count($new_used_sec_arr[$i]) == 0 )
+     {
+      throw new Exception('getNewUsedSecondaryPrice() did not return any secondary prices. Expecting two secondary prices. ');
+     }
+    }
+    else{
+     throw new Exception('getNewUsedSecondaryPrice() did not return a valid array');
+    }
    }catch(Exception $e){
     echo $e->getMessage();
    }
    
-   try{
-     $container['url_encoded_str'] = $crawler_A->encodeConfigTemplate($rs_arr);     
-   }catch(Exception $e){
-    echo $e->getMessage();
-   }
-   
-  
-   try{
-    $container['page_contents_str'] = $crawler_A->teamWorkFetchWebsite( $container );   
-   }catch(Exception $e){
-    echo $e->getMessage();
-   }
-   
-   
-   try{
-    $container['loadedPotato'] = $crawler_A->teamWorkLoadWebsite( $container['page_contents_str'], FALSE );  ////
-   }catch(Exception $e){
-    echo $e->getMessage();
-   }
-   */
-   
+   //Output:
+   echo $descrip_str . '</br>';
+   echo $prime_str . '</br>';
+   print_r( $new_used_sec_arr = $crawler_A->getNewUsedSecondaryPrice($position, $section, $container, $i));
     
   
 ?>
