@@ -268,7 +268,7 @@
    
    $section = $crawler_A->determineSection($position, $container);
    $count_children = $crawler_A->getChildren($position, $section, $container);
-    $i = 1; //Debugging: possible values are (0, 1, 2)..
+    $i = 0; //Debugging: possible values are (0, 1, 2)..
    $descrip_str    = $crawler_A->getDescription($position, $section, $container, $i);
    $prime_str      = $crawler_A->getPrimePrice($position, $section, $container, $i); 
    
